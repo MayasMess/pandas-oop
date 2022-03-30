@@ -1,0 +1,5 @@
+.idea/
+venv
+*.pyc
+local_config.py
+.coverage
