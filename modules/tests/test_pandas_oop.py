@@ -5,7 +5,7 @@ import numpy as np
 import sqlite3
 from pandas import Timestamp
 
-from modules.custom_exeptions import ValidationError, MissingDecorator
+from modules.custom_exceptions import ValidationError, MissingDecorator
 from pandas_oop import models
 
 
