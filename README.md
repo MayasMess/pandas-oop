@@ -37,6 +37,8 @@ or
 people = People(from_sql_query='select * from people')
 ```
 
+![image](static/images/df.png)
+
 You can also save it to the database with the save() method (if the dtypes of the columns change, this will raise a 
 ValidationException):
 
