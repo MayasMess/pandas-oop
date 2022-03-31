@@ -26,7 +26,6 @@ class PeopleNoTable(models.DataFrame):
 @models.sql(table='people', con=DB_CONNECTION)
 @models.Data
 class People(models.DataFrame):
-
     name = models.StringColumn()
     age = models.IntegerColumn()
     money = models.FloatColumn()
