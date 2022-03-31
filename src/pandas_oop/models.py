@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 import typing
 
-from modules.custom_exceptions import ValidationError, MissingDecorator, MissingArguments
+from .custom_exceptions import ValidationError, MissingDecorator, MissingArguments
 
 
 class StringColumn(pd.Series):
