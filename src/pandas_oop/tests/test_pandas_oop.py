@@ -5,13 +5,13 @@ import numpy as np
 import sqlite3
 from pandas import Timestamp
 
-from modules.custom_exceptions import ValidationError, MissingDecorator
-from pandas_oop import models
+from ..custom_exceptions import MissingDecorator
+from .. import models
 
 
 DB_CONNECTION = sqlite3.connect(':memory:')
-ABS_PATH = Path(__file__).resolve().parent.parent.parent
-DATA_FILE = ABS_PATH / 'modules/data/data.csv'
+ABS_PATH = Path(__file__).resolve().parent.parent.parent.parent
+DATA_FILE = ABS_PATH / 'src/pandas_oop/data/data.csv'
 
 
 @models.Data
@@ -58,6 +58,10 @@ class TestPandasOop(TestCase):
 
     def test_instance_is_dataframe(self):
         people = People()
+        self.assertIsInstance(people, pd.DataFrame, "Not an instance of pandas dataframe")
+
+    def test_instance_is_dataframe_no_table(self):
+        people = PeopleNoTable()
         self.assertIsInstance(people, pd.DataFrame, "Not an instance of pandas dataframe")
 
     def test_append_list_to_one_column(self):

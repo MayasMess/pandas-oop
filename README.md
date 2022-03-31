@@ -1,4 +1,5 @@
-![image](modules/data/images/poop.jpg)
+![image](static/images/poop.jpg)
+Pandas dataframes with object oriented programming style
 
 Installation:
 - 
