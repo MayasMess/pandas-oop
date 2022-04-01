@@ -3,8 +3,11 @@ from typing import List
 import logging
 
 import pandas as pd
+from pangres import upsert
 import numpy as np
 import typing
+
+from sqlalchemy import create_engine
 
 from .custom_exceptions import ValidationError, MissingDecorator, MissingArguments
 
@@ -55,9 +58,10 @@ class BoolColumn(pd.Series):
 
 class DataFrame(pd.DataFrame):
 
-    def __init__(self, df: pd.DataFrame = None):
+    def __init__(self, df: pd.DataFrame = None, from_csv=None, from_sql_query=None):
         super().__init__()
         self._data_types: typing.Optional[list] = None
+        self._index_list: typing.Optional[list] = None
         self.sql: typing.Optional[dict] = None
         self.__is_valide = False
 
@@ -90,13 +94,24 @@ class DataFrame(pd.DataFrame):
         self.is_valid()
 
     def save(self, *args, **kwargs) -> int:
-        if self.__is_valide:
-            self.is_sql_decorator_missing()
-            kwargs['name'] = self.sql.get('table')
-            kwargs['con'] = self.sql.get('con')
+        self.is_valid()
+        self.is_sql_decorator_missing()
+        if kwargs.get("if_row_exists") is not None:
+            if self._index_list is not None:
+                # Todo raise exception here if None
+                return upsert(df=self.set_index(self._index_list), con=self.sql.get('con').engine, table_name=self.sql.get('table'), **kwargs)
+            return upsert(df=self, con=self.sql.get('con').engine, table_name=self.sql.get('table'), **kwargs)
+        return self.normal_save(*args, **kwargs)
+
+    def normal_save(self, *args, **kwargs) -> int:
+        kwargs['name'] = self.sql.get('table')
+        with self.sql.get('con').engine.connect() as con:
+            kwargs['con'] = con
+            if kwargs.get('if_exists') is None:
+                kwargs['if_exists'] = 'append'
+            if kwargs.get('index') is None:
+                kwargs['index'] = False
             return self.to_sql(*args, **kwargs)
-        else:
-            raise ValidationError(f"You need to validate the dataframe before saving by calling the is_valid() method")
 
     @classmethod
     def read_csv(cls, *args, **kwargs) -> pd.DataFrame:
@@ -138,10 +153,14 @@ class Data:
             for attr_key, attr_val in self.decorated_class.__dict__.items()
             if not attr_key.startswith('__') and not attr_key.endswith('__')]
 
+    def __call__(self, *args, **kwargs) -> pd.DataFrame:
+
         self.df = DataFrame()
         self.df._data_types = self.data_types
-
-    def __call__(self, *args, **kwargs) -> pd.DataFrame:
+        self.index_list = [data_type.name
+                           for data_type in self.data_types
+                           if data_type.col_obj_series.kwargs.get('unique') is True]
+        self.df._index_list = self.index_list
 
         if hasattr(self, 'sql'):
             self.df.sql = self.sql
@@ -150,8 +169,9 @@ class Data:
             return self._validate_from_csv_kwarg(kwargs=kwargs)
         if kwargs.get('from_sql_query') is not None:
             self.df.is_sql_decorator_missing()
-            kwargs['con'] = self.df.sql.get('con')
-            return self._validate_from_sql_query_kwarg(kwargs=kwargs)
+            with self.df.sql.get('con').engine.connect() as con:
+                kwargs['con'] = con
+                return self._validate_from_sql_query_kwarg(kwargs=kwargs)
         for data_type in self.data_types:
             self.df[data_type.name] = data_type.col_obj_series
         return self.df
@@ -188,6 +208,11 @@ class Data:
             self.df[col_name] = df[col_name]
 
         return self.df
+
+
+class Connection:
+    def __init__(self, con_string):
+        self.engine = create_engine(con_string)
 
 
 def sql(*args, **kwargs):
