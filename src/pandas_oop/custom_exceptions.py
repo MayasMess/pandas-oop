@@ -17,3 +17,10 @@ class MissingArguments(Exception):
     def __init__(self, msg):
         self.msg = msg
         super(MissingArguments, self).__init__(msg)
+
+
+class MissingUniqueField(Exception):
+    """Empty directory exception"""
+    def __init__(self, msg):
+        self.msg = msg
+        super(MissingUniqueField, self).__init__(msg)
