@@ -5,11 +5,11 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="pandas-oop",
-    version="0.0.3",
+    version="0.0.4",
     author="Mayas Nova",
     author_email="test@test.com",
     description="Pandas dataframes with object oriented programming style",
-    install_requires=["pandas"],
+    install_requires=["pandas", "pangres", "sqlalchemy"],
     keywords=["pandas", "oop", "dataframe", "poop"],
     long_description=long_description,
     long_description_content_type="text/markdown",
