@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from pandas import Timestamp
 
+from src.pandas_oop.models import DataFrame
 from tests.test_models_declaration import People, PeopleNoTable, PEOPLE_DATA_FILE, PeopleFromDatabase, \
     PeopleFromDatabaseWithoutBoolArgs
 
@@ -12,6 +13,11 @@ class TestDataframeBehavior(TestCase):
     def test_instance_is_dataframe(self):
         people = People()
         self.assertIsInstance(people, pd.DataFrame, "Not an instance of pandas dataframe")
+
+    def test_object_is_not_singleton(self):
+        people_1 = People()
+        people_2 = People()
+        self.assertIsNot(people_2, people_1)
 
     def test_instance_is_dataframe_no_table(self):
         people = PeopleNoTable()
@@ -76,6 +82,13 @@ class TestDataframeBehavior(TestCase):
         people.insertion_date = self.string_insertion_date_list
         people.is_staff = self.is_staff_list
         self.assertFalse(people.is_valid())
+
+    def test_every_df_method_return_custom_df(self):
+        people = People(from_csv=PEOPLE_DATA_FILE, delimiter=";")
+        people = people.isnull()
+        self.assertIsInstance(people, DataFrame, 'Not a custom dataframe')
+        people = people.head(1)
+        self.assertIsInstance(people, DataFrame, 'Not a custom dataframe')
 
     def setUp(self):
         # Old school creation
