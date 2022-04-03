@@ -8,6 +8,7 @@ ABS_PATH = Path(__file__).resolve().parent.parent
 # DB_CONNECTION = models.Connection(':memory:')
 DB_CONNECTION = models.Connection(f'sqlite:///{ABS_PATH}/pandas_oop.db')
 PEOPLE_DATA_FILE = ABS_PATH / 'static/data/people.csv'
+PEOPLE2_DATA_FILE = ABS_PATH / 'static/data/people_jobs.csv'
 CARS_DATA_FILE = ABS_PATH / 'static/data/cars.csv'
 
 
@@ -28,6 +29,22 @@ class People(models.DataFrame):
     money = models.FloatColumn()
     insertion_date = models.DateColumn(format='%d-%m-%Y')
     is_staff = models.BoolColumn(true='yes', false='no')
+
+
+@models.Data
+class PeopleJobs(models.DataFrame):
+    name = models.StringColumn()
+    job = models.StringColumn()
+
+
+@models.Data
+class MergedPeople(models.DataFrame):
+    name = models.StringColumn()
+    age = models.IntegerColumn()
+    money = models.FloatColumn()
+    insertion_date = models.DateColumn(format='%d-%m-%Y')
+    is_staff = models.BoolColumn(true='yes', false='no')
+    job = models.StringColumn()
 
 
 @models.sql(table='people', con=DB_CONNECTION)

@@ -19,7 +19,8 @@ class TestSqlOperations(TestCase):
     def test_table_attribute(self):
         people = People(from_csv=PEOPLE_DATA_FILE, delimiter=";")
         if people.is_valid():
-            people.save(if_exists='replace')
+            people.sql_engine.execute('delete from people')
+            people.save()
         people_from_db = PeopleFromDatabase(from_sql_query='select * from people')
         self.assertEqual(people_from_db.to_dict(), people.to_dict())
 
@@ -33,8 +34,8 @@ class TestSqlOperations(TestCase):
 
     def test_insert_or_ignore(self):
         cars = UniqueCars(from_csv=CARS_DATA_FILE, delimiter=";")
-        test = cars.head(2)
-        cars.head(2).save(if_exists='replace')
+        cars.sql_engine.execute('delete from cars')
+        cars.head(2).save()
         cars.save(if_row_exists='ignore')
         expected_result = ['aaaa', 'bbbb', 'zzzz']
         self.assertEqual(expected_result, cars.random_string.tolist())
