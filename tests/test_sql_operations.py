@@ -4,7 +4,7 @@ from unittest import TestCase
 import pandas as pd
 from pandas import Timestamp
 
-from src.pandas_oop.custom_exceptions import MissingDecorator
+from src.pandas_oop.custom_exceptions import MissingDecorator, MissingUniqueField
 from tests.test_models_declaration import PeopleNoTable, PEOPLE_DATA_FILE, People, PeopleFromDatabase, UniqueCars, \
     CARS_DATA_FILE
 
@@ -31,17 +31,19 @@ class TestSqlOperations(TestCase):
         expected_result = UniqueCars(from_sql_query='select random_string from cars').random_string.tolist()
         self.assertEqual(random_string, expected_result)
 
-    def setUp(self):
-        # Old school creation
-        self.old_school_df = pd.DataFrame({'name': pd.Series(dtype='O'),
-                                           'age': pd.Series(dtype='int'),
-                                           'money': pd.Series(dtype='float'),
-                                           'insertion_date': pd.Series(dtype='datetime64[ns]'),
-                                           'is_staff': pd.Series(dtype='bool')})
-        self.old_school_read_csv_df = pd.read_csv(PEOPLE_DATA_FILE, delimiter=';', parse_dates=['insertion_date'])
-        self.old_school_read_csv_df['is_staff'] = self.old_school_read_csv_df['is_staff'].map({'yes': True,
-                                                                                               'no': False})
+    def test_insert_or_ignore(self):
+        cars = UniqueCars(from_csv=CARS_DATA_FILE, delimiter=";")
+        test = cars.head(2)
+        cars.head(2).save(if_exists='replace')
+        cars.save(if_row_exists='ignore')
+        expected_result = ['aaaa', 'bbbb', 'zzzz']
+        self.assertEqual(expected_result, cars.random_string.tolist())
 
+    def test_missing_unique_field(self):
+        people = People(from_csv=PEOPLE_DATA_FILE, delimiter=";")
+        self.assertRaises(MissingUniqueField, people.save, if_row_exists='update')
+
+    def setUp(self):
         # Test variable for new creation
         self.name_list = ["John", "Snow"]
         self.age_list = [15, 40]

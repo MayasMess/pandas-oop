@@ -9,7 +9,8 @@ import typing
 
 from sqlalchemy import create_engine
 
-from .custom_exceptions import ValidationError, MissingDecorator, MissingArguments
+from ._decorators import _decorate_all_methods, _return_custom_df_on_call, sql
+from .custom_exceptions import ValidationError, MissingDecorator, MissingArguments, MissingUniqueField
 
 
 class StringColumn(pd.Series):
@@ -56,6 +57,7 @@ class BoolColumn(pd.Series):
             self.true_or_false = {kwargs.get('true'): True, kwargs.get('false'): False}
 
 
+@_decorate_all_methods(_return_custom_df_on_call)
 class DataFrame(pd.DataFrame):
 
     def __init__(self, df: pd.DataFrame = None, from_csv=None, from_sql_query=None):
@@ -97,10 +99,11 @@ class DataFrame(pd.DataFrame):
         self.is_valid()
         self.is_sql_decorator_missing()
         if kwargs.get("if_row_exists") is not None:
-            if self._index_list is not None:
-                # Todo raise exception here if None
-                return upsert(df=self.set_index(self._index_list), con=self.sql.get('con').engine, table_name=self.sql.get('table'), **kwargs)
-            return upsert(df=self, con=self.sql.get('con').engine, table_name=self.sql.get('table'), **kwargs)
+            if self._index_list is None or not self._index_list:
+                raise MissingUniqueField(
+                    'Your class must contain one or multiple fields with the parameter "unique=True"')
+            return upsert(df=self.set_index(self._index_list), con=self.sql.get('con').engine,
+                          table_name=self.sql.get('table'), **kwargs)
         return self.normal_save(*args, **kwargs)
 
     def normal_save(self, *args, **kwargs) -> int:
@@ -120,6 +123,13 @@ class DataFrame(pd.DataFrame):
     @classmethod
     def read_sql_query(cls, *args, **kwargs) -> pd.DataFrame:
         return cls(pd.read_sql_query(*args, **kwargs))
+
+    @classmethod
+    def generic_overrider(cls, df) -> 'DataFrame':
+        custom_df = cls()
+        for col_name in df.columns:
+            custom_df[col_name] = df[col_name]
+        return custom_df
 
     def is_sql_decorator_missing(self) -> None:
         if self.sql is None:
@@ -215,8 +225,4 @@ class Connection:
         self.engine = create_engine(con_string)
 
 
-def sql(*args, **kwargs):
-    def wrapper(func):
-        func.__setattr__('sql', kwargs)
-        return func
-    return wrapper
+_trust = sql
