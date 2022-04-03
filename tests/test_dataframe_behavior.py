@@ -5,7 +5,7 @@ from pandas import Timestamp
 
 from src.pandas_oop.models import DataFrame
 from tests.test_models_declaration import People, PeopleNoTable, PEOPLE_DATA_FILE, PeopleFromDatabase, \
-    PeopleFromDatabaseWithoutBoolArgs
+    PeopleFromDatabaseWithoutBoolArgs, PEOPLE2_DATA_FILE, PeopleJobs, UniqueCars, MergedPeople
 
 
 class TestDataframeBehavior(TestCase):
@@ -37,20 +37,21 @@ class TestDataframeBehavior(TestCase):
 
     def test_from_csv(self):
         people = People(from_csv=PEOPLE_DATA_FILE, delimiter=";")
-        data = pd.read_csv(filepath_or_buffer=PEOPLE_DATA_FILE, delimiter=";")
         result = people.to_dict()
         self.assertEqual(result, self.expected_result)
         self.assertEqual(people.insertion_date.dtype.type, np.datetime64, "Column is not a date")
 
     def test_from_sql_query(self):
         people = People(from_csv=PEOPLE_DATA_FILE, delimiter=";")
-        people.save(if_exists='replace')
+        people.sql_engine.execute('delete from people')
+        people.save()
         people_from_db = PeopleFromDatabase(from_sql_query='select * from people')
         self.assertEqual(people_from_db.to_dict(), people.to_dict())
 
     def test_from_sql_query_without_bool_args(self):
         people = People(from_csv=PEOPLE_DATA_FILE, delimiter=";")
-        people.save(if_exists='replace')
+        people.sql_engine.execute('delete from people')
+        people.save()
         people_from_db = PeopleFromDatabaseWithoutBoolArgs(from_sql_query='select * from people')
         self.assertEqual(people_from_db.to_dict(), people.to_dict())
 
@@ -84,11 +85,35 @@ class TestDataframeBehavior(TestCase):
         self.assertFalse(people.is_valid())
 
     def test_every_df_method_return_custom_df(self):
+        people = People(from_csv=PEOPLE_DATA_FILE, delimiter=";").isnull()
+        self.assertIsInstance(people, DataFrame, 'Not a custom dataframe when isnull is called')
+
+        people = People(from_csv=PEOPLE_DATA_FILE, delimiter=";").head(1)
+        self.assertIsInstance(people, DataFrame, 'Not a custom dataframe when head is called')
+
         people = People(from_csv=PEOPLE_DATA_FILE, delimiter=";")
-        people = people.isnull()
-        self.assertIsInstance(people, DataFrame, 'Not a custom dataframe')
-        people = people.head(1)
-        self.assertIsInstance(people, DataFrame, 'Not a custom dataframe')
+        people.name = [3, -7]
+        people.insertion_date = [3, -7]
+        people.is_staff = [3, -7]
+        people = people.abs()
+        self.assertIsInstance(people, DataFrame, 'Not a custom dataframe when abs is called')
+
+        people = People(from_csv=PEOPLE_DATA_FILE, delimiter=";")
+        people2 = PeopleJobs(from_csv=PEOPLE2_DATA_FILE, delimiter=";")
+        merged_result = people.merge(people2, on='name')
+        self.assertIsInstance(merged_result, DataFrame, 'Not a custom dataframe when abs is called')
+        self.assertEqual(merged_result.to_dict(), self.expected_merged_result)
+
+    def test_validate_accept_argument(self):
+        people = People(from_csv=PEOPLE_DATA_FILE, delimiter=";")
+        people_jobs = PeopleJobs(from_csv=PEOPLE2_DATA_FILE, delimiter=";")
+        merged_result = people.merge(people_jobs, on='name').validate(from_class=MergedPeople)
+        self.assertEqual(str(merged_result), 'MergedPeople')
+
+    def test_transform_df_to_custom_df_from_class_instantiation(self):
+        data = pd.read_csv(filepath_or_buffer=PEOPLE_DATA_FILE, delimiter=";")
+        people = People(from_df=data)
+        self.assertEqual(str(people), 'People')
 
     def setUp(self):
         # Old school creation
@@ -128,6 +153,33 @@ class TestDataframeBehavior(TestCase):
             'is_staff': {
                 0: True,
                 1: False
+            },
+        }
+
+        self.expected_merged_result = {
+            'name': {
+                0: 'John',
+                1: 'Snow'
+            },
+            'age': {
+                0: 15,
+                1: 40
+            },
+            'money': {
+                0: 13.6,
+                1: 6.7
+            },
+            'insertion_date': {
+                0: Timestamp('2005-02-25'),
+                1: Timestamp('2005-02-25')
+            },
+            'is_staff': {
+                0: True,
+                1: False
+            },
+            'job': {
+                0: 'Developer',
+                1: 'RH'
             },
         }
 

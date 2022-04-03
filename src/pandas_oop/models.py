@@ -57,26 +57,29 @@ class BoolColumn(pd.Series):
             self.true_or_false = {kwargs.get('true'): True, kwargs.get('false'): False}
 
 
+@dataclass
+class DataFrameState:
+    data_types: typing.Optional[list] = None
+    index_list: typing.Optional[list] = None
+    sql: typing.Optional[dict] = None
+    class_name: typing.Optional = None
+    decorated_class: typing.Optional = None
+
+
 @_decorate_all_methods(_return_custom_df_on_call)
 class DataFrame(pd.DataFrame):
 
-    def __init__(self, df: pd.DataFrame = None, from_csv=None, from_sql_query=None):
+    def __init__(self, from_df: pd.DataFrame = None, from_csv=None, from_sql_query=None):
         super().__init__()
-        self._data_types: typing.Optional[list] = None
-        self._index_list: typing.Optional[list] = None
-        self.sql: typing.Optional[dict] = None
+        self._dataframe_state = DataFrameState()
         self.__is_valide = False
 
-        if df is not None:
-            for col_name in df.columns:
-                self[col_name] = df[col_name]
-
     def is_valid(self) -> bool:
-        if self._data_types is None:
+        if self._dataframe_state.data_types is None:
             self.__is_valide = True
             return self.__is_valide
         try:
-            for data_type in self._data_types:
+            for data_type in self._dataframe_state.data_types:
                 if data_type.col_obj_series.dtype != self[data_type.name].dtype:
                     raise ValidationError(
                         f"The column {data_type.name} is not of type {data_type.col_obj_series.dtype}")
@@ -86,35 +89,51 @@ class DataFrame(pd.DataFrame):
             logging.warning(ve.msg)
             return False
 
-    def validate(self):
-        for data_type in self._data_types:
+    def validate(self, from_class=None) -> 'DataFrame':
+        if from_class is not None:
+            self._dataframe_state = from_class().dataframe_state
+        for data_type in self._dataframe_state.data_types:
             if data_type.str_type == 'datetime64[ns]':
                 self[data_type.name] = pd.to_datetime(self[data_type.name],
                                                       format=data_type.col_obj_series.kwargs['format'])
             else:
                 self[data_type.name] = self[data_type.name].astype(data_type.str_type)
         self.is_valid()
+        return self
 
     def save(self, *args, **kwargs) -> int:
         self.is_valid()
         self.is_sql_decorator_missing()
         if kwargs.get("if_row_exists") is not None:
-            if self._index_list is None or not self._index_list:
+            if self._dataframe_state.index_list is None or not self._dataframe_state.index_list:
                 raise MissingUniqueField(
                     'Your class must contain one or multiple fields with the parameter "unique=True"')
-            return upsert(df=self.set_index(self._index_list), con=self.sql.get('con').engine,
-                          table_name=self.sql.get('table'), **kwargs)
+            return upsert(df=self.set_index(self._dataframe_state.index_list),
+                          con=self.sql_engine,
+                          table_name=self.sql_table, **kwargs)
         return self.normal_save(*args, **kwargs)
 
     def normal_save(self, *args, **kwargs) -> int:
-        kwargs['name'] = self.sql.get('table')
-        with self.sql.get('con').engine.connect() as con:
+        kwargs['name'] = self.sql_table
+        with self.sql_engine.connect() as con:
             kwargs['con'] = con
             if kwargs.get('if_exists') is None:
                 kwargs['if_exists'] = 'append'
+            elif kwargs.get('if_exists') == 'replace':
+                raise ValueError(f'got an unexpected value "if_exists=replace". Please use a normal pandas dataframe '
+                                 f'to access this functionality')
             if kwargs.get('index') is None:
                 kwargs['index'] = False
+            elif kwargs.get('index') is True:
+                return self.set_index(self._dataframe_state.index_list).to_sql(*args, **kwargs)
             return self.to_sql(*args, **kwargs)
+
+    def is_sql_decorator_missing(self) -> None:
+        if self._dataframe_state.sql is None:
+            raise MissingDecorator("You have to decorate your class with models.sql")
+        for key in self._dataframe_state.sql.keys():
+            if self._dataframe_state.sql.get(key) is None:
+                raise MissingArguments("Missing arguments on models.sql decorator")
 
     @classmethod
     def read_csv(cls, *args, **kwargs) -> pd.DataFrame:
@@ -125,18 +144,27 @@ class DataFrame(pd.DataFrame):
         return cls(pd.read_sql_query(*args, **kwargs))
 
     @classmethod
-    def generic_overrider(cls, df) -> 'DataFrame':
-        custom_df = cls()
+    def generic_overrider(cls, df: pd.DataFrame, ct_df: 'DataFrame') -> 'DataFrame':
+        new_custom_df = cls()
+        new_custom_df._dataframe_state = ct_df.dataframe_state
         for col_name in df.columns:
-            custom_df[col_name] = df[col_name]
-        return custom_df
+            new_custom_df[col_name] = df[col_name]
+        return new_custom_df
 
-    def is_sql_decorator_missing(self) -> None:
-        if self.sql is None:
-            raise MissingDecorator("You have to decorate your class with models.sql")
-        for key in self.sql.keys():
-            if self.sql.get(key) is None:
-                raise MissingArguments("Missing arguments on models.sql decorator")
+    @property
+    def dataframe_state(self):
+        return self._dataframe_state
+
+    @property
+    def sql_engine(self):
+        return self._dataframe_state.sql.get('con').sql_engine
+
+    @property
+    def sql_table(self):
+        return self._dataframe_state.sql.get('table')
+
+    def __str__(self):
+        return self._dataframe_state.class_name
 
 
 @dataclass
@@ -150,8 +178,9 @@ class DataTypes:
 class Data:
     def __init__(self, decorated_class):
         self.decorated_class = decorated_class
-
         self.decorated_inst = self.decorated_class()
+        self.df: typing.Optional[DataFrame] = None
+        self.index_list: typing.Optional[list] = None
 
         self.data_types: List[DataTypes] = [
             DataTypes(
@@ -165,36 +194,30 @@ class Data:
 
     def __call__(self, *args, **kwargs) -> pd.DataFrame:
 
-        self.df = DataFrame()
-        self.df._data_types = self.data_types
-        self.index_list = [data_type.name
-                           for data_type in self.data_types
-                           if data_type.col_obj_series.kwargs.get('unique') is True]
-        self.df._index_list = self.index_list
+        self.init_new_custom_df()
 
-        if hasattr(self, 'sql'):
-            self.df.sql = self.sql
-
+        if kwargs.get('from_df') is not None:
+            return self._validate_kwargs(kwargs=kwargs)
         if kwargs.get('from_csv') is not None:
             return self._validate_from_csv_kwarg(kwargs=kwargs)
         if kwargs.get('from_sql_query') is not None:
             self.df.is_sql_decorator_missing()
-            with self.df.sql.get('con').engine.connect() as con:
+            with self.df.sql_engine.connect() as con:
                 kwargs['con'] = con
                 return self._validate_from_sql_query_kwarg(kwargs=kwargs)
         for data_type in self.data_types:
             self.df[data_type.name] = data_type.col_obj_series
         return self.df
 
-    def _validate_from_csv_kwarg(self, kwargs: dict) -> pd.DataFrame:
+    def _validate_from_csv_kwarg(self, kwargs: dict) -> DataFrame:
         kwargs['filepath_or_buffer'] = kwargs.pop('from_csv')
-        return self._validate(kwargs, self.df.read_csv)
+        return self._validate_kwargs(kwargs=kwargs, func=pd.read_csv)
 
-    def _validate_from_sql_query_kwarg(self, kwargs: dict) -> pd.DataFrame:
+    def _validate_from_sql_query_kwarg(self, kwargs: dict) -> DataFrame:
         kwargs['sql'] = kwargs.pop('from_sql_query')
-        return self._validate(kwargs, self.df.read_sql_query)
+        return self._validate_kwargs(kwargs=kwargs, func=pd.read_sql_query)
 
-    def _validate(self, kwargs: dict, func):
+    def _validate_kwargs(self, kwargs: dict, func=None):
         col_type = {}
         bool_validator = {}
         for index, data_type in enumerate(self.data_types):
@@ -210,7 +233,10 @@ class Data:
                 bool_validator[data_type.name] = data_type.col_obj_series.true_or_false
 
             col_type[data_type.name] = data_type.np_type
-        df = func(**kwargs)
+        if kwargs.get('from_df') is not None:
+            df = kwargs.get('from_df')
+        else:
+            df = func(**kwargs)
         for col_name, bool_val_dict in bool_validator.items():
             df[col_name] = df[col_name].map(bool_val_dict)
 
@@ -219,10 +245,25 @@ class Data:
 
         return self.df
 
+    def validate(self):
+        self.init_new_custom_df()
+
+    def init_new_custom_df(self):
+        self.df = DataFrame()
+        self.df.dataframe_state.decorated_class = self.decorated_class
+        self.df.dataframe_state.class_name = self.decorated_class.__name__
+        self.df.dataframe_state.data_types = self.data_types
+        self.index_list = [data_type.name
+                           for data_type in self.data_types
+                           if data_type.col_obj_series.kwargs.get('unique') is True]
+        self.df.dataframe_state.index_list = self.index_list
+        if hasattr(self, 'sql'):
+            self.df.dataframe_state.sql = self.sql
+
 
 class Connection:
     def __init__(self, con_string):
-        self.engine = create_engine(con_string)
+        self.sql_engine = create_engine(con_string)
 
 
 _trust = sql
