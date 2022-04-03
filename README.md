@@ -14,12 +14,14 @@ Some examples
 ```python
 from pandas_oop import models
 ```
-
+```python
+DB_CONNECTION = models.Connection('sqlite:///pandas_oop.db')
+```
 ```python
 @models.sql(table='people', con=DB_CONNECTION)
 @models.Data
 class People(models.DataFrame):
-    name = models.StringColumn()
+    name = models.StringColumn(unique=True)
     age = models.IntegerColumn()
     money = models.FloatColumn()
     insertion_date = models.DateColumn(format='%d-%m-%Y')
@@ -35,15 +37,25 @@ or
 people = People(from_csv=DATA_FILE, delimiter=";")
 or
 people = People(from_sql_query='select * from people')
+or
+people = People(from_df=some_dataframe)
 ```
 
 ![image](static/images/df.png)
 
 You can also save it to the database with the save() method (if the dtypes of the columns change, this will raise a 
-ValidationException):
+ValidationError):
 
 ```python
-people.save(if_exists='append', index=False)
+people.save()
+```
+
+You can upsert to the database and this will automatically look at the unique fields that were declared in the class
+
+```python
+people.save(if_row_exists='update')
+or
+people.save(if_row_exists='ignore')
 ```
 
 If you want to revalidate your dataframe (convert the columns dtypes to the type that was declared in the class), you can 
@@ -52,8 +64,19 @@ call the validate() method:
 ```python
 people.validate()
 ```
-Coming soon
--
-functions that are supported on the major databases (sqlite, postgres, oracle, mysql)
-- save or update on duplicate
-- save or do nothing on duplicate
+
+You can also validate from another class. For example, you can do something like this:  
+
+```python
+people = People(from_csv=DATA_FILE)
+jobs = Jobs(from_sql_query='select * from jobs')
+people_with_jobs = people.merge(jobs, on='name').validate(from_class=PeopleWithJobs)
+```
+
+This is the list of the overriten methods that return a pandas_oop custom dataframe
+- 'isnull'
+- 'head'
+- 'abs'
+- 'merge'
+
+I will add more and more methods on this list.

@@ -1,1 +1,3 @@
 pandas==1.4.1
+pangres==4.1.1
+sqlalchemy==1.4.34
