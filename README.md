@@ -1,4 +1,4 @@
-![image](static/images/poop.png)
+![image](static/images/poop_sticker.png)
 # Pandas-Oop
 (Also known as Poop), is a package that uses Pandas dataframes with object oriented programming style
 
