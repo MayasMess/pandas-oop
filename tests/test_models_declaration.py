@@ -1,6 +1,8 @@
 import sqlite3
 from pathlib import Path
 
+from pandas import Timestamp
+
 from src.pandas_oop import models
 
 
@@ -73,3 +75,18 @@ class UniqueCars(models.DataFrame):
     name = models.StringColumn(unique=True)
     model = models.StringColumn(unique=True)
     random_string = models.StringColumn()
+
+
+@models.sql(table='people', con=DB_CONNECTION)
+@models.Data
+class PeopleFromIterator(models.DataFrame):
+    name = models.StringColumn()
+    age = models.IntegerColumn()
+    money = models.FloatColumn()
+    insertion_date = models.DateColumn()
+    is_staff = models.BoolColumn()
+
+
+def retrieve_people():
+    for x in range(1000):
+        yield "John", x, 50.0, Timestamp("2005-02-02"), True

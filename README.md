@@ -39,6 +39,16 @@ or
 people = People(from_sql_query='select * from people')
 or
 people = People(from_df=some_dataframe)
+or
+people = People(from_iterator=some_function_that_yield_values)
+```
+example of function that yield values:
+
+```python
+def some_function_that_yield_values():
+    while something:
+        ...
+        yield name, age, money, insertion_date, is_staff
 ```
 
 ![image](static/images/df.png)
