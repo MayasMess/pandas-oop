@@ -5,7 +5,8 @@ from pandas import Timestamp
 
 from src.pandas_oop.models import DataFrame
 from tests.test_models_declaration import People, PeopleNoTable, PEOPLE_DATA_FILE, PeopleFromDatabase, \
-    PeopleFromDatabaseWithoutBoolArgs, PEOPLE2_DATA_FILE, PeopleJobs, UniqueCars, MergedPeople
+    PeopleFromDatabaseWithoutBoolArgs, PEOPLE2_DATA_FILE, PeopleJobs, UniqueCars, MergedPeople, retrieve_people, \
+    PeopleFromIterator
 
 
 class TestDataframeBehavior(TestCase):
@@ -114,6 +115,11 @@ class TestDataframeBehavior(TestCase):
         data = pd.read_csv(filepath_or_buffer=PEOPLE_DATA_FILE, delimiter=";")
         people = People(from_df=data)
         self.assertEqual(str(people), 'People')
+
+    def test_populate_from_iterator(self):
+        people = PeopleFromIterator(from_iterator=retrieve_people)
+        self.assertEqual(people.shape, (1000, 5))
+        self.assertTrue(people.is_valid())
 
     def setUp(self):
         # Old school creation

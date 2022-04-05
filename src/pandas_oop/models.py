@@ -69,7 +69,7 @@ class DataFrameState:
 @_decorate_all_methods(_return_custom_df_on_call)
 class DataFrame(pd.DataFrame):
 
-    def __init__(self, from_df: pd.DataFrame = None, from_csv=None, from_sql_query=None):
+    def __init__(self, from_df: pd.DataFrame = None, from_csv=None, from_sql_query=None, from_iterator=None):
         super().__init__()
         self._dataframe_state = DataFrameState()
         self.__is_valide = False
@@ -192,32 +192,43 @@ class Data:
             for attr_key, attr_val in self.decorated_class.__dict__.items()
             if not attr_key.startswith('__') and not attr_key.endswith('__')]
 
-    def __call__(self, *args, **kwargs) -> pd.DataFrame:
+    def __call__(self, *args, **kwargs) -> DataFrame:
 
         self.init_new_custom_df()
 
         if kwargs.get('from_df') is not None:
-            return self._validate_kwargs(kwargs=kwargs)
+            return self._validate_kwargs(**kwargs)
         if kwargs.get('from_csv') is not None:
-            return self._validate_from_csv_kwarg(kwargs=kwargs)
+            return self._validate_from_csv_kwarg(**kwargs)
+        if kwargs.get('from_iterator') is not None:
+            return self._validate_from_iterator_kwarg(**kwargs)
         if kwargs.get('from_sql_query') is not None:
             self.df.is_sql_decorator_missing()
             with self.df.sql_engine.connect() as con:
                 kwargs['con'] = con
-                return self._validate_from_sql_query_kwarg(kwargs=kwargs)
+                return self._validate_from_sql_query_kwarg(**kwargs)
         for data_type in self.data_types:
             self.df[data_type.name] = data_type.col_obj_series
         return self.df
 
-    def _validate_from_csv_kwarg(self, kwargs: dict) -> DataFrame:
+    def _validate_from_csv_kwarg(self, **kwargs) -> DataFrame:
         kwargs['filepath_or_buffer'] = kwargs.pop('from_csv')
-        return self._validate_kwargs(kwargs=kwargs, func=pd.read_csv)
+        return self._validate_kwargs(func=pd.read_csv, **kwargs)
 
-    def _validate_from_sql_query_kwarg(self, kwargs: dict) -> DataFrame:
+    def _validate_from_sql_query_kwarg(self, **kwargs) -> DataFrame:
         kwargs['sql'] = kwargs.pop('from_sql_query')
-        return self._validate_kwargs(kwargs=kwargs, func=pd.read_sql_query)
+        return self._validate_kwargs(func=pd.read_sql_query, **kwargs)
 
-    def _validate_kwargs(self, kwargs: dict, func=None):
+    def _validate_from_iterator_kwarg(self, **kwargs) -> DataFrame:
+        data = []
+        for row in kwargs.get('from_iterator')():
+            data.append(row)
+        kwargs['columns'] = [data_type.name for data_type in self.data_types]
+        kwargs['data'] = data
+        kwargs.pop('from_iterator')
+        return self._validate_kwargs(func=self.create_df_from_data_and_columns, **kwargs)
+
+    def _validate_kwargs(self, func=None, **kwargs):
         col_type = {}
         bool_validator = {}
         for index, data_type in enumerate(self.data_types):
@@ -259,6 +270,10 @@ class Data:
         self.df.dataframe_state.index_list = self.index_list
         if hasattr(self, 'sql'):
             self.df.dataframe_state.sql = self.sql
+
+    @staticmethod
+    def create_df_from_data_and_columns(**kwargs) -> pd.DataFrame:
+        return pd.DataFrame(data=kwargs.get('data'), columns=kwargs.get('columns'))
 
 
 class Connection:
