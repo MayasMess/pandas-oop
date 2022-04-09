@@ -51,6 +51,7 @@ class TestMigrations(TestCase):
         people = PeopleMigrations()
         people.name = ['John', 'Snow', 'Armin']
         people.save()
+        people.sql_engine.execute('delete from people_migrations')
 
     def test_save_with_pk(self):
         people = PeopleMigrationsWithPrimaryKey()
