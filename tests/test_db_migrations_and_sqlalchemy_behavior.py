@@ -4,7 +4,7 @@ from unittest import TestCase
 from sqlalchemy import Column, Integer, Text
 from sqlalchemy.exc import IntegrityError
 
-from src import Base
+from src.pandas_oop import Base
 from src.pandas_oop import models
 from src.pandas_oop.fields import StringColumn, IntegerColumn, FloatColumn
 
