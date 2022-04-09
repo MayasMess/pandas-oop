@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="pandas-oop",
-    version="0.9.0",
+    version="0.9.1",
     author="Mayas Nova",
     author_email="test@test.com",
     description="Pandas dataframes with object oriented programming style",

@@ -11,7 +11,7 @@ from sqlalchemy import create_engine
 
 from ._decorators import _decorate_all_methods, _return_custom_df_on_call, sql
 from .custom_exceptions import ValidationError, MissingDecorator, MissingArguments, MissingUniqueField
-from .. import Base
+from . import Base
 
 
 @dataclass

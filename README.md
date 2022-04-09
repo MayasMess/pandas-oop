@@ -95,8 +95,14 @@ I will add more and more methods on this list.
 
 New features
 -
-- Alembic Database migration support added: (add this configuration on the env.py file of your alembic config)
+Alembic Database migration support added:
+- On your main application package, import Base (this is a declarative_base from sqlalchemy)
 ```python
 from pandas_oop import Base
+```
+- Add this configuration on the env.py file of your alembic config
+```python
+from your_app import Base
 target_metadata = Base.metadata
 ```
+- And finaly, update your database url on your alembic.ini file

@@ -4,7 +4,7 @@ from pandas.core.frame import DataFrame
 
 from sqlalchemy import Column, Integer
 
-from .. import Base
+from . import Base
 
 
 # this methods will return a pandas_oop.models.DataFrame
