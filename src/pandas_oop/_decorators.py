@@ -2,6 +2,11 @@ from functools import wraps
 from pandas.core.generic import NDFrame
 from pandas.core.frame import DataFrame
 
+from sqlalchemy import Column, Integer
+
+from .. import Base
+
+
 # this methods will return a pandas_oop.models.DataFrame
 METHODS_TO_OVERRIDE = [
     'isnull',
@@ -32,11 +37,28 @@ def _return_custom_df_on_call(func, cls=None):
     return wrapper
 
 
+def init_sqlalchemy_class(func):
+    # Init sqlalchemy class. (this is used for migration detection)
+    attr_sqlalchemy_dict = {data_type.name: data_type.col_obj_series.sqlalchemy_column
+                            for data_type in func.data_types}
+    attr_sqlalchemy_dict['__tablename__'] = func.sql.get('table')
+    func.index_list = [data_type.name
+                       for data_type in func.data_types
+                       if data_type.col_obj_series.kwargs.get('unique') is True]
+    if not func.index_list:
+        attr_sqlalchemy_dict['id'] = Column(Integer, primary_key=True)
+    func.sqlalchemy_class = type(func.decorated_class.__name__,
+                                 (Base,),
+                                 attr_sqlalchemy_dict)
+    return func
+
+
 def sql(**kwargs):
     """
-    Sql Decorator => just used to get arguments
+    Sql Decorator => just used to get arguments and init the sqlalchemy class to enable db migrations
     """
     def wrapper(func):
         func.__setattr__('sql', kwargs)
+        func = init_sqlalchemy_class(func=func)
         return func
     return wrapper

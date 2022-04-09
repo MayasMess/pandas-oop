@@ -2,13 +2,15 @@ import sqlite3
 from pathlib import Path
 
 from pandas import Timestamp
-
+from sqlalchemy.ext.declarative import declarative_base
 from src.pandas_oop import models
+from src.pandas_oop.fields import StringColumn, IntegerColumn, FloatColumn, DateColumn, BoolColumn
 
+Base = declarative_base()
 
 ABS_PATH = Path(__file__).resolve().parent.parent
 # DB_CONNECTION = models.Connection(':memory:')
-DB_CONNECTION = models.Connection(f'sqlite:///{ABS_PATH}/pandas_oop.db')
+DB_CONNECTION = models.Connection(f'sqlite:///{ABS_PATH}/db/pandas_oop.db')
 PEOPLE_DATA_FILE = ABS_PATH / 'static/data/people.csv'
 PEOPLE2_DATA_FILE = ABS_PATH / 'static/data/people_jobs.csv'
 CARS_DATA_FILE = ABS_PATH / 'static/data/cars.csv'
@@ -16,75 +18,75 @@ CARS_DATA_FILE = ABS_PATH / 'static/data/cars.csv'
 
 @models.Data
 class PeopleNoTable(models.DataFrame):
-    name = models.StringColumn()
-    age = models.IntegerColumn()
-    money = models.FloatColumn()
-    insertion_date = models.DateColumn()
-    is_staff = models.BoolColumn(true='yes', false='no')
+    name = StringColumn()
+    age = IntegerColumn()
+    money = FloatColumn()
+    insertion_date = DateColumn()
+    is_staff = BoolColumn(true='yes', false='no')
 
 
 @models.sql(table='people', con=DB_CONNECTION)
 @models.Data
 class People(models.DataFrame):
-    name = models.StringColumn()
-    age = models.IntegerColumn()
-    money = models.FloatColumn()
-    insertion_date = models.DateColumn(format='%d-%m-%Y')
-    is_staff = models.BoolColumn(true='yes', false='no')
+    name = StringColumn()
+    age = IntegerColumn()
+    money = FloatColumn()
+    insertion_date = DateColumn(format='%d-%m-%Y')
+    is_staff = BoolColumn(true='yes', false='no')
 
 
 @models.Data
 class PeopleJobs(models.DataFrame):
-    name = models.StringColumn()
-    job = models.StringColumn()
+    name = StringColumn()
+    job = StringColumn()
 
 
 @models.Data
 class MergedPeople(models.DataFrame):
-    name = models.StringColumn()
-    age = models.IntegerColumn()
-    money = models.FloatColumn()
-    insertion_date = models.DateColumn(format='%d-%m-%Y')
-    is_staff = models.BoolColumn(true='yes', false='no')
-    job = models.StringColumn()
+    name = StringColumn()
+    age = IntegerColumn()
+    money = FloatColumn()
+    insertion_date = DateColumn(format='%d-%m-%Y')
+    is_staff = BoolColumn(true='yes', false='no')
+    job = StringColumn()
 
 
-@models.sql(table='people', con=DB_CONNECTION)
+@models.sql(table='people_numeric_bool', con=DB_CONNECTION)
 @models.Data
 class PeopleFromDatabase(models.DataFrame):
-    name = models.StringColumn()
-    age = models.IntegerColumn()
-    money = models.FloatColumn()
-    insertion_date = models.DateColumn()
-    is_staff = models.BoolColumn(true=1, false=0)
+    name = StringColumn()
+    age = IntegerColumn()
+    money = FloatColumn()
+    insertion_date = DateColumn()
+    is_staff = BoolColumn(true=1, false=0)
 
 
-@models.sql(table='people', con=DB_CONNECTION)
+@models.sql(table='people_from_db', con=DB_CONNECTION)
 @models.Data
 class PeopleFromDatabaseWithoutBoolArgs(models.DataFrame):
-    name = models.StringColumn()
-    age = models.IntegerColumn()
-    money = models.FloatColumn()
-    insertion_date = models.DateColumn()
-    is_staff = models.BoolColumn()
+    name = StringColumn()
+    age = IntegerColumn()
+    money = FloatColumn()
+    insertion_date = DateColumn()
+    is_staff = BoolColumn()
 
 
 @models.sql(table='cars', con=DB_CONNECTION)
 @models.Data
 class UniqueCars(models.DataFrame):
-    name = models.StringColumn(unique=True)
-    model = models.StringColumn(unique=True)
-    random_string = models.StringColumn()
+    name = StringColumn(unique=True)
+    model = StringColumn(unique=True)
+    random_string = StringColumn()
 
 
-@models.sql(table='people', con=DB_CONNECTION)
+@models.sql(table='people_from_iter', con=DB_CONNECTION)
 @models.Data
 class PeopleFromIterator(models.DataFrame):
-    name = models.StringColumn()
-    age = models.IntegerColumn()
-    money = models.FloatColumn()
-    insertion_date = models.DateColumn()
-    is_staff = models.BoolColumn()
+    name = StringColumn()
+    age = IntegerColumn()
+    money = FloatColumn()
+    insertion_date = DateColumn()
+    is_staff = BoolColumn()
 
 
 def retrieve_people():

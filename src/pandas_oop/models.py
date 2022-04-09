@@ -11,50 +11,7 @@ from sqlalchemy import create_engine
 
 from ._decorators import _decorate_all_methods, _return_custom_df_on_call, sql
 from .custom_exceptions import ValidationError, MissingDecorator, MissingArguments, MissingUniqueField
-
-
-class StringColumn(pd.Series):
-    def __init__(self, **kwargs):
-        super().__init__(dtype='object')
-        self.str_type = "object"
-        self.np_type = np.str_
-        self.kwargs = kwargs
-
-
-class IntegerColumn(pd.Series):
-    def __init__(self, **kwargs):
-        super().__init__(dtype='int64')
-        self.str_type = "int64"
-        self.np_type = np.int64
-        self.kwargs = kwargs
-
-
-class FloatColumn(pd.Series):
-    def __init__(self, **kwargs):
-        super().__init__(dtype='float64')
-        self.str_type = "float64"
-        self.np_type = np.float64
-        self.kwargs = kwargs
-
-
-class DateColumn(pd.Series):
-    def __init__(self, **kwargs):
-        super().__init__(dtype='datetime64[ns]')
-        self.str_type = 'datetime64[ns]'
-        self.np_type = np.datetime64
-        self.kwargs = kwargs
-
-
-class BoolColumn(pd.Series):
-    def __init__(self, **kwargs):
-        super().__init__(dtype='bool')
-        self.str_type = "bool"
-        self.np_type = np.bool_
-        self.kwargs = kwargs
-
-        self.true_or_false = None
-        if kwargs.get('true') is not None and kwargs.get('false') is not None:
-            self.true_or_false = {kwargs.get('true'): True, kwargs.get('false'): False}
+from .. import Base
 
 
 @dataclass
@@ -64,6 +21,7 @@ class DataFrameState:
     sql: typing.Optional[dict] = None
     class_name: typing.Optional = None
     decorated_class: typing.Optional = None
+    sqlalchemy_class: Base = None
 
 
 @_decorate_all_methods(_return_custom_df_on_call)
@@ -177,11 +135,14 @@ class DataTypes:
 
 class Data:
     def __init__(self, decorated_class):
+        """
+        This init function is called in the class definition
+        """
         self.decorated_class = decorated_class
         self.decorated_inst = self.decorated_class()
         self.df: typing.Optional[DataFrame] = None
         self.index_list: typing.Optional[list] = None
-
+        self.sqlalchemy_class = None
         self.data_types: List[DataTypes] = [
             DataTypes(
                 name=attr_key,
@@ -192,8 +153,13 @@ class Data:
             for attr_key, attr_val in self.decorated_class.__dict__.items()
             if not attr_key.startswith('__') and not attr_key.endswith('__')]
 
+    """
+    Between them is called the sql decorator in the _decorators.py file
+    """
     def __call__(self, *args, **kwargs) -> DataFrame:
-
+        """
+        This call function is called in the class instantiation
+        """
         self.init_new_custom_df()
 
         if kwargs.get('from_df') is not None:
@@ -264,12 +230,11 @@ class Data:
         self.df.dataframe_state.decorated_class = self.decorated_class
         self.df.dataframe_state.class_name = self.decorated_class.__name__
         self.df.dataframe_state.data_types = self.data_types
-        self.index_list = [data_type.name
-                           for data_type in self.data_types
-                           if data_type.col_obj_series.kwargs.get('unique') is True]
         self.df.dataframe_state.index_list = self.index_list
         if hasattr(self, 'sql'):
             self.df.dataframe_state.sql = self.sql
+            self.df.dataframe_state.sql['table'] = self.sql.get('table')
+            self.df.dataframe_state.sqlalchemy_class = self.sqlalchemy_class
 
     @staticmethod
     def create_df_from_data_and_columns(**kwargs) -> pd.DataFrame:
