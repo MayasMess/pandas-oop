@@ -8,6 +8,7 @@ Installation:
 ```shell script
   pip install pandas-oop
 ```
+
 Some examples
 -
 
@@ -15,10 +16,10 @@ Some examples
 from pandas_oop import models
 ```
 ```python
-DB_CONNECTION = models.Connection('sqlite:///pandas_oop.db')
+DB_CONNECTION = models.Connection('sqlite:///pandas_oop.db') # this is the same con_string for sqlalchemy engine
 ```
 ```python
-@models.sql(table='people', con=DB_CONNECTION)
+@models.sql(table='people', con=DB_CONNECTION) # Use this decorator if you want to connect your class to a database
 @models.Data
 class People(models.DataFrame):
     name = models.StringColumn(unique=True)
@@ -90,3 +91,12 @@ This is the list of the overriten methods that return a pandas_oop custom datafr
 - 'merge'
 
 I will add more and more methods on this list.
+
+
+New features
+-
+- Alembic Database migration support added: (add this configuration on the env.py file of your alembic config)
+```python
+from pandas_oop import Base
+target_metadata = Base.metadata
+```
