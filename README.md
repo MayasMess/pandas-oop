@@ -14,6 +14,7 @@ Some examples
 
 ```python
 from pandas_oop import models
+from pandas_oop.fields import StringColumn, IntegerColumn, FloatColumn, DateColumn, BoolColumn
 ```
 ```python
 DB_CONNECTION = models.Connection('sqlite:///pandas_oop.db') # this is the same con_string for sqlalchemy engine
@@ -22,11 +23,11 @@ DB_CONNECTION = models.Connection('sqlite:///pandas_oop.db') # this is the same 
 @models.sql(table='people', con=DB_CONNECTION) # Use this decorator if you want to connect your class to a database
 @models.Data
 class People(models.DataFrame):
-    name = models.StringColumn(unique=True)
-    age = models.IntegerColumn()
-    money = models.FloatColumn()
-    insertion_date = models.DateColumn(format='%d-%m-%Y')
-    is_staff = models.BoolColumn(true='yes', false='no')
+    name = StringColumn(unique=True)
+    age = IntegerColumn()
+    money = FloatColumn()
+    insertion_date = DateColumn(format='%d-%m-%Y')
+    is_staff = BoolColumn(true='yes', false='no')
 ```
 
 Now when instantiating this class, it will return a custom dataframe with all the functionalities of a Pandas
