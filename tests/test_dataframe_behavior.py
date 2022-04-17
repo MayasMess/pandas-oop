@@ -6,7 +6,7 @@ from pandas import Timestamp
 from src.pandas_oop.models import DataFrame
 from tests.test_models_declaration import People, PeopleNoTable, PEOPLE_DATA_FILE, PeopleFromDatabase, \
     PeopleFromDatabaseWithoutBoolArgs, PEOPLE2_DATA_FILE, PeopleJobs, UniqueCars, MergedPeople, retrieve_people, \
-    PeopleFromIterator
+    PeopleFromIterator, PeopleDeclaredWithDifferentFields
 
 
 class TestDataframeBehavior(TestCase):
@@ -120,6 +120,10 @@ class TestDataframeBehavior(TestCase):
         people = PeopleFromIterator(from_iterator=retrieve_people)
         self.assertEqual(people.shape, (1000, 5))
         self.assertTrue(people.is_valid())
+
+    def test_dataframe_has_column_name_declared(self):
+        people = PeopleDeclaredWithDifferentFields(from_csv=PEOPLE_DATA_FILE, delimiter=";")
+        self.assertEqual(list(people.columns), ['name_test', 'age', 'money_test', 'insertion_date', 'is_staff'])
 
     def setUp(self):
         # Old school creation

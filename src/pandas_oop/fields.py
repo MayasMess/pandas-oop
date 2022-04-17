@@ -12,6 +12,7 @@ class StringColumn(pd.Series):
         self.np_type = np.str_
         self.kwargs = copy(kwargs)
         kwargs['primary_key'] = kwargs.pop('unique', None)
+        kwargs.pop('target_name', None)
         self.sqlalchemy_column = Column(Text, **kwargs)
 
 
@@ -22,6 +23,7 @@ class IntegerColumn(pd.Series):
         self.np_type = np.int64
         self.kwargs = copy(kwargs)
         kwargs['primary_key'] = kwargs.pop('unique', None)
+        kwargs.pop('target_name', None)
         self.sqlalchemy_column = Column(Integer, **kwargs)
 
 
@@ -32,6 +34,7 @@ class FloatColumn(pd.Series):
         self.np_type = np.float64
         self.kwargs = copy(kwargs)
         kwargs['primary_key'] = kwargs.pop('unique', None)
+        kwargs.pop('target_name', None)
         self.sqlalchemy_column = Column(Float, **kwargs)
 
 
@@ -44,6 +47,7 @@ class DateColumn(pd.Series):
         if kwargs.get('format') is not None:
             del kwargs['format']
         kwargs['primary_key'] = kwargs.pop('unique', None)
+        kwargs.pop('target_name', None)
         self.sqlalchemy_column = Column(Date, **kwargs)
 
 
@@ -59,4 +63,5 @@ class BoolColumn(pd.Series):
             del kwargs['true']
             del kwargs['false']
         kwargs['primary_key'] = kwargs.pop('unique', None)
+        kwargs.pop('target_name', None)
         self.sqlalchemy_column = Column(Boolean, **kwargs)
