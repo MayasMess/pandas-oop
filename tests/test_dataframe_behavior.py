@@ -123,7 +123,7 @@ class TestDataframeBehavior(TestCase):
 
     def test_dataframe_has_column_name_declared(self):
         people = PeopleDeclaredWithDifferentFields(from_csv=PEOPLE_DATA_FILE, delimiter=";")
-        self.assertEqual(list(people.columns), ['name_test', 'age', 'money_test', 'insertion_date', 'is_staff'])
+        self.assertEqual(list(people.columns), ['name_test', 'age', 'money_test', 'insertion_date_test', 'is_staff'])
 
     def setUp(self):
         # Old school creation

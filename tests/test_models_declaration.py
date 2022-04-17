@@ -94,7 +94,7 @@ class PeopleDeclaredWithDifferentFields(models.DataFrame):
     name_test = StringColumn(target_name='name')
     age = IntegerColumn()
     money_test = FloatColumn(target_name='money')
-    insertion_date = DateColumn()
+    insertion_date_test = DateColumn(target_name="insertion_date")
     is_staff = BoolColumn()
 
 
