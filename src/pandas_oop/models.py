@@ -3,6 +3,8 @@ from typing import List
 import logging
 
 import pandas as pd
+from pandas._typing import NDFrameT
+from pandas.core.indexing import _LocIndexer
 from pangres import upsert
 import numpy as np
 import typing
@@ -93,13 +95,36 @@ class DataFrame(pd.DataFrame):
             if self._dataframe_state.sql.get(key) is None:
                 raise MissingArguments("Missing arguments on models.sql decorator")
 
-    @classmethod
-    def read_csv(cls, *args, **kwargs) -> pd.DataFrame:
-        return cls(pd.read_csv(*args, **kwargs))
+    def _take_with_is_copy(self, indices, axis=0) -> NDFrameT:
+        """
+        Internal version of the `take` method that sets the `_is_copy`
+        attribute to keep track of the parent dataframe (using in indexing
+        for the SettingWithCopyWarning).
 
-    @classmethod
-    def read_sql_query(cls, *args, **kwargs) -> pd.DataFrame:
-        return cls(pd.read_sql_query(*args, **kwargs))
+        See the docstring of `take` for full explanation of the parameters.
+        """
+        result = self.generic_overrider(self.take(indices=indices, axis=axis), self)
+        # Maybe set copy if we didn't actually change the index.
+        if not result._get_axis(axis).equals(self._get_axis(axis)):
+            result._set_is_copy(self)
+        return result
+
+    def _slice(self, slobj: slice, axis=0) -> NDFrameT:
+        """
+        Construct a slice of this container.
+
+        Slicing with this method is *always* positional.
+        """
+        assert isinstance(slobj, slice), type(slobj)
+        axis = self._get_block_manager_axis(axis)
+        result = self._constructor(self._mgr.get_slice(slobj, axis=axis))
+        result = result.__finalize__(self)
+
+        # this could be a view
+        # but only in a single-dtyped view sliceable case
+        is_copy = axis != 0 or result._is_view
+        result._set_is_copy(self, copy=is_copy)
+        return self.generic_overrider(result, self)
 
     @classmethod
     def generic_overrider(cls, df: pd.DataFrame, ct_df: 'DataFrame') -> 'DataFrame':
