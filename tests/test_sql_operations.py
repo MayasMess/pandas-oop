@@ -1,7 +1,6 @@
 import string
 import random
 from unittest import TestCase
-import pandas as pd
 from pandas import Timestamp
 
 from src.pandas_oop.custom_exceptions import MissingDecorator, MissingUniqueField
@@ -29,7 +28,7 @@ class TestSqlOperations(TestCase):
         cars = UniqueCars(from_csv=CARS_DATA_FILE, delimiter=";")
         cars.random_string = random_string
         cars.save(if_row_exists='update')
-        expected_result = UniqueCars(from_sql_query='select random_string from cars').random_string.tolist()
+        expected_result = UniqueCars(from_sql_query='select * from cars').random_string.tolist()
         self.assertEqual(random_string, expected_result)
 
     def test_insert_or_ignore(self):

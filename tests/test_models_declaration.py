@@ -89,6 +89,15 @@ class PeopleFromIterator(models.DataFrame):
     is_staff = BoolColumn()
 
 
+@models.Data
+class PeopleDeclaredWithDifferentFields(models.DataFrame):
+    name_test = StringColumn(target_name='name')
+    age = IntegerColumn()
+    money_test = FloatColumn(target_name='money')
+    insertion_date = DateColumn()
+    is_staff = BoolColumn()
+
+
 def retrieve_people():
     for x in range(1000):
         yield "John", x, 50.0, Timestamp("2005-02-02"), True

@@ -131,6 +131,7 @@ class DataTypes:
     str_type: str
     np_type: np.generic
     col_obj_series: pd.Series
+    target_name: str
 
 
 class Data:
@@ -148,7 +149,8 @@ class Data:
                 name=attr_key,
                 str_type=attr_val.str_type,
                 np_type=attr_val.np_type,
-                col_obj_series=getattr(self.decorated_class, attr_key)
+                col_obj_series=getattr(self.decorated_class, attr_key),
+                target_name=attr_val.kwargs.get('target_name') if attr_val.kwargs.get('target_name') is not None else attr_key
             )
             for attr_key, attr_val in self.decorated_class.__dict__.items()
             if not attr_key.startswith('__') and not attr_key.endswith('__')]
@@ -217,8 +219,8 @@ class Data:
         for col_name, bool_val_dict in bool_validator.items():
             df[col_name] = df[col_name].map(bool_val_dict)
 
-        for col_name in df.columns:
-            self.df[col_name] = df[col_name]
+        for data_type in self.data_types:
+            self.df[data_type.name] = df[data_type.target_name]
 
         return self.df
 
