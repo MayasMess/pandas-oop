@@ -25,7 +25,7 @@ DB_CONNECTION = models.Connection('sqlite:///pandas_oop.db') # this is the same 
 class People(models.DataFrame):
     name = StringColumn(unique=True)
     age = IntegerColumn()
-    money = FloatColumn()
+    money = FloatColumn(target_name="coins") # target_name if the name in the csv or table is coins and you want to have a different variable name
     insertion_date = DateColumn(format='%d-%m-%Y')
     is_staff = BoolColumn(true='yes', false='no')
 ```

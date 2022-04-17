@@ -203,9 +203,9 @@ class Data:
 
             if data_type.str_type == 'datetime64[ns]':
                 if 'parse_dates' in kwargs.keys():
-                    kwargs['parse_dates'].append(data_type.name)
+                    kwargs['parse_dates'].append(data_type.target_name)
                 else:
-                    kwargs['parse_dates'] = [data_type.name]
+                    kwargs['parse_dates'] = [data_type.target_name]
                 continue
 
             if data_type.str_type == 'bool' and data_type.col_obj_series.true_or_false is not None:
