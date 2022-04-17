@@ -90,6 +90,7 @@ This is the list of the overriten methods that return a pandas_oop custom datafr
 - 'head'
 - 'abs'
 - 'merge'
+- 'loc' and dataframe slicing
 
 I will add more and more methods on this list.
 

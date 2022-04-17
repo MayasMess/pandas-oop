@@ -13,6 +13,7 @@ ABS_PATH = Path(__file__).resolve().parent.parent
 DB_CONNECTION = models.Connection(f'sqlite:///{ABS_PATH}/db/pandas_oop.db')
 PEOPLE_DATA_FILE = ABS_PATH / 'static/data/people.csv'
 PEOPLE2_DATA_FILE = ABS_PATH / 'static/data/people_jobs.csv'
+LOT_OF_PEOPLE_DATA_FILE = ABS_PATH / 'static/data/lot_of_people.csv'
 CARS_DATA_FILE = ABS_PATH / 'static/data/cars.csv'
 
 

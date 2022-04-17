@@ -6,7 +6,7 @@ from pandas import Timestamp
 from src.pandas_oop.models import DataFrame
 from tests.test_models_declaration import People, PeopleNoTable, PEOPLE_DATA_FILE, PeopleFromDatabase, \
     PeopleFromDatabaseWithoutBoolArgs, PEOPLE2_DATA_FILE, PeopleJobs, UniqueCars, MergedPeople, retrieve_people, \
-    PeopleFromIterator, PeopleDeclaredWithDifferentFields
+    PeopleFromIterator, PeopleDeclaredWithDifferentFields, LOT_OF_PEOPLE_DATA_FILE
 
 
 class TestDataframeBehavior(TestCase):
@@ -85,13 +85,15 @@ class TestDataframeBehavior(TestCase):
         people.is_staff = self.is_staff_list
         self.assertFalse(people.is_valid())
 
-    def test_every_df_method_return_custom_df(self):
+    def test_isnull_return_custom_df(self):
         people = People(from_csv=PEOPLE_DATA_FILE, delimiter=";").isnull()
         self.assertIsInstance(people, DataFrame, 'Not a custom dataframe when isnull is called')
 
+    def test_head_return_custom_df(self):
         people = People(from_csv=PEOPLE_DATA_FILE, delimiter=";").head(1)
         self.assertIsInstance(people, DataFrame, 'Not a custom dataframe when head is called')
 
+    def test_abs_return_custom_df(self):
         people = People(from_csv=PEOPLE_DATA_FILE, delimiter=";")
         people.name = [3, -7]
         people.insertion_date = [3, -7]
@@ -99,6 +101,7 @@ class TestDataframeBehavior(TestCase):
         people = people.abs()
         self.assertIsInstance(people, DataFrame, 'Not a custom dataframe when abs is called')
 
+    def test_merge_return_custom_df(self):
         people = People(from_csv=PEOPLE_DATA_FILE, delimiter=";")
         people2 = PeopleJobs(from_csv=PEOPLE2_DATA_FILE, delimiter=";")
         merged_result = people.merge(people2, on='name')
@@ -124,6 +127,32 @@ class TestDataframeBehavior(TestCase):
     def test_dataframe_has_column_name_declared(self):
         people = PeopleDeclaredWithDifferentFields(from_csv=PEOPLE_DATA_FILE, delimiter=";")
         self.assertEqual(list(people.columns), ['name_test', 'age', 'money_test', 'insertion_date_test', 'is_staff'])
+
+    def test_slicing_return_custom_df(self):
+        people = People(from_csv=PEOPLE_DATA_FILE, delimiter=";")
+        people = people[people.name == 'John']
+        self.assertIsInstance(people, DataFrame, 'Not a custom dataframe when slicing is performed')
+
+    def test_when_loc_is_performed(self):
+        people = People(from_csv=PEOPLE_DATA_FILE, delimiter=";")
+        people = people.loc[people.name == 'John']
+        self.assertIsInstance(people, DataFrame, 'Not a custom dataframe when loc is performed')
+
+    def test_when_loc_set_value_is_performed(self):
+        people = People(from_csv=PEOPLE_DATA_FILE, delimiter=";")
+        people.loc[people.name == 'John'] = ('Marie', 15, 15.0, Timestamp('2005-02-25'), True)
+        self.assertIsInstance(people, DataFrame, 'Not a custom dataframe when loc set value is performed')
+
+    def test_when_loc_slice_indexing_is_performed(self):
+        people = People(from_csv=PEOPLE_DATA_FILE, delimiter=";")
+        people = people[:1]
+        self.assertIsInstance(people, DataFrame, 'Not a custom dataframe when loc set value is performed')
+
+    def test_multi_loc_conditions(self):
+        people = People(from_csv=LOT_OF_PEOPLE_DATA_FILE, delimiter=";")
+        people = people.loc[(people.age < 18) & (people.name.str.startswith("M"))]
+        self.assertEqual(people.shape, (3, 5))
+        self.assertIsInstance(people, DataFrame, 'Not a custom dataframe when loc multiple conditions is performed')
 
     def setUp(self):
         # Old school creation
