@@ -40,7 +40,7 @@ class DataFrame(pd.DataFrame):
             return self.__is_valide
         try:
             for data_type in self._dataframe_state.data_types:
-                if data_type.col_obj_series.dtype != self[data_type.name].dtype:
+                if data_type.base_type not in self[data_type.name].dtype.name:
                     raise ValidationError(
                         f"The column {data_type.name} is not of type {data_type.col_obj_series.dtype}")
             self.__is_valide = True
@@ -55,7 +55,7 @@ class DataFrame(pd.DataFrame):
         for data_type in self._dataframe_state.data_types:
             if data_type.str_type == 'datetime64[ns]':
                 self[data_type.name] = pd.to_datetime(self[data_type.name],
-                                                      format=data_type.col_obj_series.kwargs['format'])
+                                                      format=data_type.col_obj_series.kwargs.get('format'))
             else:
                 self[data_type.name] = self[data_type.name].astype(data_type.str_type)
         self.is_valid()
@@ -80,8 +80,8 @@ class DataFrame(pd.DataFrame):
             if kwargs.get('if_exists') is None:
                 kwargs['if_exists'] = 'append'
             elif kwargs.get('if_exists') == 'replace':
-                raise ValueError(f'got an unexpected value "if_exists=replace". Please use a normal pandas dataframe '
-                                 f'to access this functionality')
+                raise TypeError(f'got an unexpected value "if_exists=replace". Please use a normal pandas dataframe '
+                                f'to access this functionality')
             if kwargs.get('index') is None:
                 kwargs['index'] = False
             elif kwargs.get('index') is True:
@@ -153,6 +153,7 @@ class DataFrame(pd.DataFrame):
 @dataclass
 class DataTypes:
     name: str
+    base_type: str
     str_type: str
     np_type: np.generic
     col_obj_series: pd.Series
@@ -172,6 +173,7 @@ class Data:
         self.data_types: List[DataTypes] = [
             DataTypes(
                 name=attr_key,
+                base_type=attr_val.base_type,
                 str_type=attr_val.str_type,
                 np_type=attr_val.np_type,
                 col_obj_series=getattr(self.decorated_class, attr_key),
