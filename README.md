@@ -35,14 +35,17 @@ dataframe and some others
 
 ```python
 people = People()
-or
+"""-----------------------------------------------------------"""
 people = People(from_csv=DATA_FILE, delimiter=";")
-or
+"""-----------------------------------------------------------"""
 people = People(from_sql_query='select * from people')
-or
+"""-----------------------------------------------------------"""
 people = People(from_df=some_dataframe)
-or
+"""-----------------------------------------------------------"""
 people = People(from_iterator=some_function_that_yield_values)
+"""-----------------------------------------------------------""" 
+for people_chunk in People(from_csv=DATA_FILE, delimiter=";", chunksize=10):
+    ...
 ```
 example of function that yield values:
 
