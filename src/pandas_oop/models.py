@@ -4,7 +4,7 @@ import logging
 
 import pandas as pd
 from pandas._typing import NDFrameT
-from pandas.core.indexing import _LocIndexer
+from pandas.io.parsers.readers import TextFileReader
 from pangres import upsert
 import numpy as np
 import typing
@@ -29,7 +29,7 @@ class DataFrameState:
 @_decorate_all_methods(_return_custom_df_on_call)
 class DataFrame(pd.DataFrame):
 
-    def __init__(self, from_df: pd.DataFrame = None, from_csv=None, from_sql_query=None, from_iterator=None):
+    def __init__(self, from_df: pd.DataFrame = None, from_csv=None, from_sql_query=None, from_iterator=None, chunksize=None):
         super().__init__()
         self._dataframe_state = DataFrameState()
         self.__is_valide = False
@@ -243,16 +243,24 @@ class Data:
             df = kwargs.get('from_df')
         else:
             df = func(**kwargs)
+        if isinstance(df, TextFileReader):
+            return self.df_generator(df, bool_validator)
+        self.build_custom_df(df, bool_validator)
+        return self.df
+
+    def df_generator(self, df, bool_validator):
+        for chunk in df:
+            self.init_new_custom_df()
+            self.build_custom_df(chunk, bool_validator)
+            yield self.df
+
+    def build_custom_df(self, df, bool_validator):
+        # Convert bool values
         for col_name, bool_val_dict in bool_validator.items():
             df[col_name] = df[col_name].map(bool_val_dict)
 
         for data_type in self.data_types:
             self.df[data_type.name] = df[data_type.target_name]
-
-        return self.df
-
-    def validate(self):
-        self.init_new_custom_df()
 
     def init_new_custom_df(self):
         self.df = DataFrame()

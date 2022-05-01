@@ -26,6 +26,12 @@ class PeopleNoTable(models.DataFrame):
     is_staff = BoolColumn(true='yes', false='no')
 
 
+@models.Data
+class PeopleTwoColumns(models.DataFrame):
+    name = StringColumn()
+    age = IntegerColumn()
+
+
 @models.sql(table='people', con=DB_CONNECTION)
 @models.Data
 class People(models.DataFrame):

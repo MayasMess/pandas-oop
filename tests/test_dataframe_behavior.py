@@ -6,7 +6,7 @@ from pandas import Timestamp
 from src.pandas_oop.models import DataFrame
 from tests.test_models_declaration import People, PeopleNoTable, PEOPLE_DATA_FILE, PeopleFromDatabase, \
     PeopleFromDatabaseWithoutBoolArgs, PEOPLE2_DATA_FILE, PeopleJobs, UniqueCars, MergedPeople, retrieve_people, \
-    PeopleFromIterator, PeopleDeclaredWithDifferentFields, LOT_OF_PEOPLE_DATA_FILE
+    PeopleFromIterator, PeopleDeclaredWithDifferentFields, LOT_OF_PEOPLE_DATA_FILE, PeopleTwoColumns
 
 
 class TestDataframeBehavior(TestCase):
@@ -19,6 +19,10 @@ class TestDataframeBehavior(TestCase):
         people_1 = People()
         people_2 = People()
         self.assertIsNot(people_2, people_1)
+
+    def test_dataframe_has_only_declared_columns(self):
+        people = PeopleTwoColumns(from_csv=PEOPLE_DATA_FILE, delimiter=";")
+        self.assertEqual(['name', 'age'], list(people.columns))
 
     def test_instance_is_dataframe_no_table(self):
         people = PeopleNoTable()
@@ -153,6 +157,10 @@ class TestDataframeBehavior(TestCase):
         people = people.loc[(people.age < 18) & (people.name.str.startswith("M"))]
         self.assertEqual(people.shape, (3, 5))
         self.assertIsInstance(people, DataFrame, 'Not a custom dataframe when loc multiple conditions is performed')
+
+    def test_chunksize(self):
+        for people_chunk in People(from_csv=LOT_OF_PEOPLE_DATA_FILE, delimiter=";", chunksize=2):
+            self.assertIsInstance(people_chunk, DataFrame, 'Not a custom dataframe when chunksize')
 
     def setUp(self):
         # Old school creation
