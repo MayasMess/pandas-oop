@@ -1,5 +1,5 @@
 ![image](static/images/poop_sticker.png)
-# Pandas-Oop
+# Pandas-Oop (not maintained, see https://github.com/MayasMess/panorma it's simpler)
 (Also known as Poop), is a package that uses Pandas dataframes with object oriented programming style
 
 Installation:
